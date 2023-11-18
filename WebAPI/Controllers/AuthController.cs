@@ -20,7 +20,7 @@ using Microsoft.Extensions.Hosting.Internal;
 
 namespace Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/auth")]
     [ApiController]
     public class AuthController : ControllerBase
     {
@@ -96,7 +96,7 @@ namespace Api.Controllers
         }
 
         [Route("update-password")]
-        [HttpPost, Authorize]
+        [HttpPut, Authorize]
         public async Task<IActionResult> UpdatePassword([FromBody] PasswordModel passwordModel)
         {
             var foundUser = await _userManager.FindByNameAsync(HttpContext.User.Identity.Name);
@@ -127,8 +127,8 @@ namespace Api.Controllers
       
 
         [Route("up-permission")]
-        [HttpPost]
-        [Authorize(Policy = "RequireAdminOnly")]
+        [HttpPut]
+        [Authorize(Policy = "RequireManager")]
         public async Task<IActionResult> UpPermission(String Username)
         {
             var foundUser = await _userManager.FindByNameAsync(Username);
@@ -143,8 +143,8 @@ namespace Api.Controllers
         }
 
         [Route("down-permission")]
-        [HttpPost]
-        [Authorize(Policy = "RequireAdminOnly")]
+        [HttpPut]
+        [Authorize(Policy = "RequireAdmin")]
         public async Task<IActionResult> DownPermission(String Username)
         {
             var foundUser = await _userManager.FindByNameAsync(Username);
@@ -155,7 +155,7 @@ namespace Api.Controllers
 
             await _userManager.RemoveFromRoleAsync(foundUser, UserRoles.Manager);
 
-            return Ok(new ResponseModel("Success", $"Role '{UserRoles.Manager}' is deleted from user '{Username}'"));
+            return Ok(new ResponseModel("Success", $"Role '{UserRoles.Manager}' is removed from user '{Username}'"));
         }
 
 
@@ -172,7 +172,7 @@ namespace Api.Controllers
                 var tokenValue = await GenerateJWTTokenAsync(foundUser, null, LoginModel.RememberMe);
                 return Ok(tokenValue);
             }
-            return Unauthorized();
+            return Unauthorized(new ResponseModel("Error", $"'{LoginModel.UserName}' not found"));
 
         }
 
@@ -183,7 +183,7 @@ namespace Api.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest("Please, provide all required fields");
+                return BadRequest(new ResponseModel("Error", "Please, provide all required fields"));
             }
 
             AppUser DbUser;
@@ -196,12 +196,12 @@ namespace Api.Controllers
             {
                 DbUser = await _userManager.FindByIdAsync(storedToken.UserId);
 
-                if (DbUser == null) { return BadRequest("(Invalid access or refresh token"); }
+                if (DbUser == null) { return BadRequest(new ResponseModel("Error", "Invalid access or refresh token")); }
 
             }
             else 
             {
-                return BadRequest("(Invalid refresh token");
+                return BadRequest(new ResponseModel("Error", "Invalid refresh token"));
             }
 
             try
@@ -216,7 +216,7 @@ namespace Api.Controllers
             }
             catch (SecurityTokenException)
             {
-                return BadRequest("(Invalid access or refresh token");
+                return BadRequest(new ResponseModel("Error", "Invalid access or refresh token"));
             }
 
         }
@@ -274,7 +274,7 @@ namespace Api.Controllers
             };
         }
 
-        [HttpPost, Authorize]
+        [HttpDelete, Authorize]
         [Route("revoke-refresh-token")]
         public async Task<IActionResult> RevokeToken()
         {
@@ -287,41 +287,20 @@ namespace Api.Controllers
                 _context.RefreshTokens.Remove(stored);
                 await _context.SaveChangesAsync();
                 //await _signInManager.SignOutAsync();
-                return Ok("Refresh token is deleted");
+                return Ok(new ResponseModel("Success", "Refresh token revoked successfully"));
             }
             
-            return BadRequest("Refresh token is not found!");
+            return BadRequest(new ResponseModel("Error", "Refresh token is not found"));
         }
 
 
-        [Route("test")]
-        [HttpGet]
-        //[AllowAnonymous]
-        [Authorize(Policy = "RequireAdminOnly")]
-        public async Task<IActionResult> Test()
-        {
-            return Ok("You entered successfully");
-        }
-
-
-        [HttpGet, Authorize]
-        [Route("user-info")]
-        public async Task<IActionResult> UserInfo() 
-        {
-            var username = HttpContext.User.Identity.Name;
-            var user = await _userManager.FindByNameAsync(username);
-            var userDb = new UserModel { FirstName = user.FirstName, LastName = user.LastName, UserName = user.UserName, Email = user.Email, ImageUrl = user.ImageUrl };
-            return Ok(userDb);
-        }
-
-      
         [Route("set-image")]
         [HttpPost, Authorize]
         public async Task<IActionResult> SetImage(IFormFile ImageFile)
         {
             if (ImageFile == null || ImageFile.Length == 0)
             {
-                return BadRequest("Invalid file");
+                return BadRequest(new ResponseModel("Error", "Invalid file"));
             }
 
             var foundUser = await _userManager.FindByNameAsync(HttpContext.User.Identity.Name);
@@ -330,7 +309,7 @@ namespace Api.Controllers
 
             string uniqueFileName = $"{foundUser.Id}.jpeg";
 
-            string filePath = Path.Combine(imageDir,"Images", uniqueFileName);
+            string filePath = Path.Combine(imageDir, "Images", uniqueFileName);
 
             Console.WriteLine(filePath);
 
@@ -347,8 +326,72 @@ namespace Api.Controllers
             foundUser.ImageUrl = filePath;
             await _userManager.UpdateAsync(foundUser);
 
-            return Ok(new ResponseModel("Success", "Image is set successfully"));
-           
+            return Ok(new ResponseModel("Success", "Image set successfully"));
+        }
+
+
+        [HttpGet, Authorize]
+        [Route("get-user")]
+        public async Task<IActionResult> GetUser() 
+        {
+            var username = HttpContext.User.Identity.Name;
+            var user = await _userManager.FindByNameAsync(username);
+            var userDb = new UserModel { FirstName = user.FirstName, LastName = user.LastName, UserName = user.UserName, Email = user.Email, ImageUrl = user.ImageUrl };
+            return Ok(userDb);
+        }
+
+
+        [HttpGet]
+        [Route("all-users")]
+        [Authorize(Policy = "RequireAdmin")]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            var userList = await _userManager.Users.ToListAsync();
+            var userDbList = new List<UserModel>();
+            foreach (var user in userList)
+            {
+                var userDb = new UserModel { FirstName = user.FirstName, LastName = user.LastName, UserName = user.UserName, Email = user.Email, ImageUrl = user.ImageUrl };
+
+                userDbList.Add(userDb);
+            }
+            return Ok(userDbList);
+        }
+
+        [HttpDelete]
+        [Route("remove-user")]
+        [Authorize(Policy = "RequireAdmin")]
+        public async Task<IActionResult> RemoveUser(String Username)
+        {
+            var usernameDb = HttpContext.User.Identity.Name;
+            if (usernameDb.Equals(Username))
+            {
+                return BadRequest(new ResponseModel("Error", "You could not delete yourself"));
+            }
+
+            var user = await _userManager.FindByNameAsync(Username);
+
+            if (user == null) 
+            {
+                return BadRequest(new ResponseModel("Error", $"'{Username}' not found"));
+            }
+
+            var result = await _userManager.DeleteAsync(user);
+
+            if (result.Succeeded)
+            {
+                return Ok(new ResponseModel("Success", "User deleted successfully"));
+            }
+            return BadRequest(new ResponseModel("Error", "User deletion failed"));
+
+        }
+
+        [Route("test")]
+        [HttpGet]
+        //[AllowAnonymous]
+        [Authorize(Policy = "RequireAdmin")]
+        public async Task<IActionResult> Test()
+        {
+            return Ok("You entered successfully");
         }
     }
 

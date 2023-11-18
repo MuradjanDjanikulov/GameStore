@@ -14,12 +14,6 @@ namespace DataAccess.Repository
 
         Task<bool> Delete(int id);
 
-        //        Task<T> UpdatePatch(int id, JsonPatchDocument type);
-
-        /*    {"path": "development",
-             "op": "replace",
-             "value": "ZZZ"}
-       */
 
     }
 

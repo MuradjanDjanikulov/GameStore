@@ -1,19 +1,17 @@
-﻿using Microsoft.AspNetCore.JsonPatch;
-namespace Api.Services
+﻿namespace Api.Services
 {
-    public interface IGenericCRUDService <T> where T : class
+
+   public interface IGenericCRUDService<T, K> where T : class where K : class
     {
-        Task<IEnumerable<T>> GetAll();
+    Task<IEnumerable<K>> GetAll();
 
-        Task<T> Get(int id);
+    Task<K> Get(int id);
 
-        Task<T> Create(T employee);
+    Task<K> Create(T employee);
 
-        Task<T> Update(int id, T employee);
+    Task<K> Update(int id, T employee);
 
-        Task<bool> Delete(int id);
+    Task<bool> Delete(int id);
 
-//        Task<T> UpdatePatch(int id, JsonPatchDocument employee);
-
-    }
+   }
 }

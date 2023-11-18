@@ -4,17 +4,27 @@ using DataAccess.Repository;
 using Microsoft.AspNet.Identity;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using WebAPI.Models;
 using WebAPI.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
 
 
-builder.Services.AddDbContextPool<AppDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("GameStoreDb")));
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("GameStoreDb"));
+    //options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+});
 
 builder.Services.AddIdentity<AppUser, IdentityRole>().AddEntityFrameworkStores<AppDbContext>().AddDefaultTokenProviders();
 
@@ -65,13 +75,13 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("RequireUserOnly", policy =>
+    options.AddPolicy("RequireUser", policy =>
     policy.RequireRole("User", "Manager", "Admin"));
 
-    options.AddPolicy("RequireManagerOnly", policy =>
+    options.AddPolicy("RequireManager", policy =>
     policy.RequireRole("Manager", "Admin"));
 
-    options.AddPolicy("RequireAdminOnly", policy =>
+    options.AddPolicy("RequireAdmin", policy =>
     policy.RequireRole("Admin"));
 
     //policyConfig.RequireAuthenticatedUser();
@@ -80,15 +90,16 @@ builder.Services.AddAuthorization(options =>
 });
 //builder.Services.AddScoped<IGenericCRUDService<EmployeeModel>, EmployeeCRUDService>();
 
-//builder.Services.AddScoped<IGenericCRUDService<AddressModel>, AddressCRUDService>();
-
-builder.Services.AddControllers();
+//builder.Services.AddScoped<IGenericCRUDService<GameModel,Game>, GameCRUDService>();
+builder.Services.AddScoped<IGameCRUDService, GameCRUDService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
 //builder.Services.AddScoped<IGenericRepository<Employee>, EmployeeRepository>();
-//builder.Services.AddScoped<IGenericRepository<Address>, AddressRepository>();
+//builder.Services.AddScoped<IGenericRepository<Game>, GameRepository>();
+builder.Services.AddScoped<IGameRepository, GameRepository>();
 
 builder.Services.AddSwaggerGen(option =>
 {
@@ -117,14 +128,9 @@ builder.Services.AddSwaggerGen(option =>
         }
     });
 });
-/*builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-            .AddCookie(options =>
-            {
-                options.LoginPath = "api/Auth/login";
-                options.ExpireTimeSpan = TimeSpan.FromMinutes(30); 
+builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
-            });
-*/
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

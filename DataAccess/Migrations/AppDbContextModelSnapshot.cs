@@ -98,6 +98,139 @@ namespace DataAccess.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("DataAccess.Entity.Game", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("Price")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Games");
+                });
+
+            modelBuilder.Entity("DataAccess.Entity.Genre", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentId");
+
+                    b.ToTable("Genres");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Strategy"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Rally",
+                            ParentId = 1
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Name = "Arcade",
+                            ParentId = 1
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Name = "Formula",
+                            ParentId = 1
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Name = "Off-road",
+                            ParentId = 1
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Name = "Rpg"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Name = "Sports"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Name = "Races"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Name = "Action"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Name = "Fps",
+                            ParentId = 9
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Name = "Tps",
+                            ParentId = 9
+                        },
+                        new
+                        {
+                            Id = 12,
+                            Name = "Misc",
+                            ParentId = 9
+                        },
+                        new
+                        {
+                            Id = 13,
+                            Name = "Adventure"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            Name = "Puzzle & Skill"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            Name = "Other"
+                        });
+                });
+
             modelBuilder.Entity("DataAccess.Entity.RefreshToken", b =>
                 {
                     b.Property<int>("Id")
@@ -125,6 +258,21 @@ namespace DataAccess.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("GameGenre", b =>
+                {
+                    b.Property<int>("GamesId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GenresId")
+                        .HasColumnType("int");
+
+                    b.HasKey("GamesId", "GenresId");
+
+                    b.HasIndex("GenresId");
+
+                    b.ToTable("GameGenre");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -260,6 +408,15 @@ namespace DataAccess.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("DataAccess.Entity.Genre", b =>
+                {
+                    b.HasOne("DataAccess.Entity.Genre", "ParentGenre")
+                        .WithMany("SubGenres")
+                        .HasForeignKey("ParentId");
+
+                    b.Navigation("ParentGenre");
+                });
+
             modelBuilder.Entity("DataAccess.Entity.RefreshToken", b =>
                 {
                     b.HasOne("DataAccess.Entity.AppUser", "User")
@@ -269,6 +426,21 @@ namespace DataAccess.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("GameGenre", b =>
+                {
+                    b.HasOne("DataAccess.Entity.Game", null)
+                        .WithMany()
+                        .HasForeignKey("GamesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DataAccess.Entity.Genre", null)
+                        .WithMany()
+                        .HasForeignKey("GenresId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -320,6 +492,11 @@ namespace DataAccess.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("DataAccess.Entity.Genre", b =>
+                {
+                    b.Navigation("SubGenres");
                 });
 #pragma warning restore 612, 618
         }
