@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using DataAccess.Entity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using DataAccess.Entity;
 
 namespace DataAccess.Repository
 {
@@ -12,6 +12,7 @@ namespace DataAccess.Repository
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Game> Games { get; set; }
         public DbSet<Genre> Genres { get; set; }
+        public DbSet<Comment> Comments { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -21,24 +22,33 @@ namespace DataAccess.Repository
                 .Property(u => u.ImageUrl)
                 .IsRequired(false);
 
+            modelBuilder.Entity<Comment>()
+                .Property(c => c.UserId)
+                .IsRequired(false);
+
+            modelBuilder.Entity<Comment>()
+                .Property(c => c.ParentCommentId)
+                .IsRequired(false);
+
             modelBuilder.Entity<Genre>()
-         .HasData(
-             new Genre { Id = 1, Name = "Strategy" },
-                 new Genre { Id = 2, Name = "Rally", ParentId = 1 },
-                 new Genre { Id = 3, Name = "Arcade", ParentId = 1 },
-                 new Genre { Id = 4, Name = "Formula", ParentId = 1 },
-                 new Genre { Id = 5, Name = "Off-road", ParentId = 1 },
-             new Genre { Id = 6, Name = "Rpg" },
-             new Genre { Id = 7, Name = "Sports" },
-             new Genre { Id = 8, Name = "Races" },
-             new Genre { Id = 9, Name = "Action" },
-                 new Genre { Id = 10, Name = "Fps", ParentId = 9 },
-                 new Genre { Id = 11, Name = "Tps", ParentId = 9 },
-                 new Genre { Id = 12, Name = "Misc", ParentId = 9 },
-             new Genre { Id = 13, Name = "Adventure" },
-             new Genre { Id = 14, Name = "Puzzle & Skill" },
-             new Genre { Id = 15, Name = "Other" }
-         );
+                .HasData(
+                new Genre { Id = 1, Name = "Strategy" },
+                new Genre { Id = 2, Name = "Rally", ParentGenreId = 1 },
+                new Genre { Id = 3, Name = "Arcade", ParentGenreId = 1 },
+                new Genre { Id = 4, Name = "Formula", ParentGenreId = 1 },
+                new Genre { Id = 5, Name = "Off-road", ParentGenreId = 1 },
+                new Genre { Id = 6, Name = "Rpg" },
+                new Genre { Id = 7, Name = "Sports" },
+                new Genre { Id = 8, Name = "Races" },
+                new Genre { Id = 9, Name = "Action" },
+                new Genre { Id = 10, Name = "Fps", ParentGenreId = 9 },
+                new Genre { Id = 11, Name = "Tps", ParentGenreId = 9 },
+                new Genre { Id = 12, Name = "Misc", ParentGenreId = 9 },
+                new Genre { Id = 13, Name = "Adventure" },
+                new Genre { Id = 14, Name = "Puzzle & Skill" },
+                new Genre { Id = 15, Name = "Other" }
+                );
+
 
             /*            modelBuilder.Entity<Game>()
                             .HasMany(g => g.Genres)

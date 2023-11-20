@@ -1,7 +1,7 @@
 ﻿namespace Api.Services
 {
 
-   public interface IGenericCRUDService<T, K> where T : class where K : class
+   public interface IGenericService<T, K> where T : class where K : class
     {
     Task<IEnumerable<K>> GetAll();
 

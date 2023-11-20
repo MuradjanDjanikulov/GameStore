@@ -1,22 +1,16 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using Api.Models;
+﻿using Api.Models;
+using API.Models;
 using DataAccess.Entity;
+using DataAccess.Repository;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.EntityFrameworkCore;
-using API.Models;
-using DataAccess.Repository;
-using WebAPI.Utils;
 using WebAPI.Models;
-using Microsoft.AspNetCore.Authorization;
-using Azure.Core;
-using Newtonsoft.Json.Linq;
-using Microsoft.AspNet.Identity;
-using Microsoft.Extensions.Hosting.Internal;
+using WebAPI.Utils;
 
 namespace Api.Controllers
 {
@@ -33,9 +27,9 @@ namespace Api.Controllers
 
 
         public AuthController(
-            Microsoft.AspNetCore.Identity.UserManager<AppUser> userManager, 
+            Microsoft.AspNetCore.Identity.UserManager<AppUser> userManager,
             //RoleManager<IdentityRole> roleManager, 
-            IConfiguration configuration, 
+            IConfiguration configuration,
             AppDbContext context,
             TokenValidationParameters tokenValidationParameters
             //SignInManager<AppUser> signInManager
@@ -67,12 +61,13 @@ namespace Api.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel("Error", "Email already exists!"));
             }
 
-            var user = new AppUser { 
-                SecurityStamp = Guid.NewGuid().ToString(), 
-                UserName = registerModel.Username, 
+            var user = new AppUser
+            {
+                SecurityStamp = Guid.NewGuid().ToString(),
+                UserName = registerModel.Username,
                 Email = registerModel.Email,
                 FirstName = registerModel.Firstname,
-                LastName =registerModel.Lastname 
+                LastName = registerModel.Lastname
             };
 
             var result = await _userManager.CreateAsync(user, registerModel.Password);
@@ -87,7 +82,6 @@ namespace Api.Controllers
 
                 return StatusCode(StatusCodes.Status500InternalServerError, errorMessages);
 
-                //return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel("Error", "User creation failed!"));
             }
 
             await _userManager.AddToRoleAsync(user, UserRoles.User);
@@ -112,50 +106,50 @@ namespace Api.Controllers
                     {
                         _context.RefreshTokens.Remove(stored);
                         await _context.SaveChangesAsync();
-                        
+
                         return Ok(new ResponseModel("Success", "Password changed successfully"));
 
                     }
 
                 }
-               
+
             }
 
-            return BadRequest( new ResponseModel("Error", "Password changing failed"));
+            return BadRequest(new ResponseModel("Error", "Password changing failed"));
         }
 
-      
 
-        [Route("up-permission")]
+
+        [Route("up-permission/{username}")]
         [HttpPut]
         [Authorize(Policy = "RequireManager")]
-        public async Task<IActionResult> UpPermission(String Username)
+        public async Task<IActionResult> UpPermission([FromRoute] String username)
         {
-            var foundUser = await _userManager.FindByNameAsync(Username);
+            var foundUser = await _userManager.FindByNameAsync(username);
             if (foundUser == null)
             {
-                return NotFound(new ResponseModel("Error", $"User '{Username}' not found"));
+                return NotFound(new ResponseModel("Error", $"User '{username}' not found"));
             }
 
             await _userManager.AddToRoleAsync(foundUser, UserRoles.Manager);
 
-            return Ok(new ResponseModel("Success", $"Role '{UserRoles.Manager}' added to user '{Username}'"));
+            return Ok(new ResponseModel("Success", $"Role '{UserRoles.Manager}' added to user '{username}'"));
         }
 
-        [Route("down-permission")]
+        [Route("down-permission/{username}")]
         [HttpPut]
         [Authorize(Policy = "RequireAdmin")]
-        public async Task<IActionResult> DownPermission(String Username)
+        public async Task<IActionResult> DownPermission([FromRoute] String username)
         {
-            var foundUser = await _userManager.FindByNameAsync(Username);
+            var foundUser = await _userManager.FindByNameAsync(username);
             if (foundUser == null)
             {
-                return NotFound(new ResponseModel("Error", $"User '{Username}' not found"));
+                return NotFound(new ResponseModel("Error", $"User '{username}' not found"));
             }
 
             await _userManager.RemoveFromRoleAsync(foundUser, UserRoles.Manager);
 
-            return Ok(new ResponseModel("Success", $"Role '{UserRoles.Manager}' is removed from user '{Username}'"));
+            return Ok(new ResponseModel("Success", $"Role '{UserRoles.Manager}' is removed from user '{username}'"));
         }
 
 
@@ -199,7 +193,7 @@ namespace Api.Controllers
                 if (DbUser == null) { return BadRequest(new ResponseModel("Error", "Invalid access or refresh token")); }
 
             }
-            else 
+            else
             {
                 return BadRequest(new ResponseModel("Error", "Invalid refresh token"));
             }
@@ -208,7 +202,7 @@ namespace Api.Controllers
             {
                 jwtTokenHandler.ValidateToken(TokenModel.Token, _tokenValidationParameters, out SecurityToken securityToken);
 
-                return Ok(await GenerateJWTTokenAsync(DbUser, storedToken,false));
+                return Ok(await GenerateJWTTokenAsync(DbUser, storedToken, false));
             }
             catch (SecurityTokenExpiredException)
             {
@@ -222,12 +216,13 @@ namespace Api.Controllers
         }
 
 
-        private async Task<TokenModel> GenerateJWTTokenAsync(AppUser User, RefreshToken? RefToken, bool RememberMe ) 
+        private async Task<TokenModel> GenerateJWTTokenAsync(AppUser User, RefreshToken? RefToken, bool RememberMe)
         {
             var roles = await _userManager.GetRolesAsync(User);
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, User.UserName),
+                new Claim(ClaimTypes.NameIdentifier, User.Id),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 //new Claim(ClaimTypes.Role, UserRoles.User)
             };
@@ -240,12 +235,12 @@ namespace Api.Controllers
             var symmetricSecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]));
 
             var signingCredentials = new SigningCredentials(symmetricSecurityKey, SecurityAlgorithms.HmacSha256);
-            
+
             var token = new JwtSecurityToken(
                 issuer: _configuration["JWT:ValidIssuer"],
                 audience: _configuration["JWT:ValidAudience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(5),
+                expires: DateTime.UtcNow.AddMinutes(60),
                 signingCredentials: signingCredentials);
 
             var jwtToken = new JwtSecurityTokenHandler().WriteToken(token);
@@ -257,7 +252,7 @@ namespace Api.Controllers
                 {
                     UserId = User.Id,
                     DateAdded = DateTime.UtcNow,
-                    DateExpire = RememberMe ? DateTime.UtcNow.AddDays(7) : DateTime.UtcNow.AddMinutes(10),
+                    DateExpire = RememberMe ? DateTime.UtcNow.AddDays(7) : DateTime.UtcNow.AddMinutes(60),
                     Token = Guid.NewGuid().ToString() + "-" + Guid.NewGuid().ToString()
                 };
 
@@ -266,7 +261,7 @@ namespace Api.Controllers
                 await _context.RefreshTokens.AddAsync(refreshToken);
                 await _context.SaveChangesAsync();
             }
-            
+
             return new TokenModel
             {
                 Token = jwtToken,
@@ -280,7 +275,7 @@ namespace Api.Controllers
         {
             var username = HttpContext.User.Identity.Name;
             var user = await _userManager.FindByNameAsync(username);
-            
+
             var stored = await _context.RefreshTokens.FirstOrDefaultAsync(token => token.User.Id == user.Id);
             if (stored != null && stored.DateExpire >= DateTime.UtcNow)
             {
@@ -289,7 +284,7 @@ namespace Api.Controllers
                 //await _signInManager.SignOutAsync();
                 return Ok(new ResponseModel("Success", "Refresh token revoked successfully"));
             }
-            
+
             return BadRequest(new ResponseModel("Error", "Refresh token is not found"));
         }
 
@@ -332,7 +327,7 @@ namespace Api.Controllers
 
         [HttpGet, Authorize]
         [Route("get-user")]
-        public async Task<IActionResult> GetUser() 
+        public async Task<IActionResult> GetUser()
         {
             var username = HttpContext.User.Identity.Name;
             var user = await _userManager.FindByNameAsync(username);
@@ -370,7 +365,7 @@ namespace Api.Controllers
 
             var user = await _userManager.FindByNameAsync(Username);
 
-            if (user == null) 
+            if (user == null)
             {
                 return BadRequest(new ResponseModel("Error", $"'{Username}' not found"));
             }
@@ -385,14 +380,6 @@ namespace Api.Controllers
 
         }
 
-        [Route("test")]
-        [HttpGet]
-        //[AllowAnonymous]
-        [Authorize(Policy = "RequireAdmin")]
-        public async Task<IActionResult> Test()
-        {
-            return Ok("You entered successfully");
-        }
     }
 
 }

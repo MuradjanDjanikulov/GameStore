@@ -21,5 +21,7 @@ namespace DataAccess.Entity
         public double Price { get; set; }
 
         public virtual HashSet<Genre>? Genres { get; set; }
+
+        public virtual ICollection<Comment>? Comments { get; set; }
     }
 }

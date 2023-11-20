@@ -1,19 +1,13 @@
 using Api.Services;
 using DataAccess.Entity;
 using DataAccess.Repository;
-using Microsoft.AspNet.Identity;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
-using System.Text.Json;
 using System.Text.Json.Serialization;
-using WebAPI.Models;
 using WebAPI.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -88,18 +82,15 @@ builder.Services.AddAuthorization(options =>
     //policyConfig.RequireClaim("", "");
 
 });
-//builder.Services.AddScoped<IGenericCRUDService<EmployeeModel>, EmployeeCRUDService>();
+builder.Services.AddScoped<IGameService, GameService>();
 
-//builder.Services.AddScoped<IGenericCRUDService<GameModel,Game>, GameCRUDService>();
-builder.Services.AddScoped<IGameCRUDService, GameCRUDService>();
+builder.Services.AddScoped<ICommentService, CommentService>();
+
+builder.Services.AddScoped<IGameRepository, GameRepository>();
+
+builder.Services.AddScoped<ICommentRepository, CommentRepository>();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-
-//builder.Services.AddScoped<IGenericRepository<Employee>, EmployeeRepository>();
-//builder.Services.AddScoped<IGenericRepository<Game>, GameRepository>();
-builder.Services.AddScoped<IGameRepository, GameRepository>();
 
 builder.Services.AddSwaggerGen(option =>
 {
@@ -121,7 +112,7 @@ builder.Services.AddSwaggerGen(option =>
                 Reference = new OpenApiReference
                 {
                     Type=ReferenceType.SecurityScheme,
-                    Id="Bearer"
+                    Id = "Bearer"
                 }
             },
             new string[]{}
@@ -138,7 +129,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-    c.ShowCommonExtensions();
+        c.ShowCommonExtensions();
     });
 }
 

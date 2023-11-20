@@ -6,11 +6,11 @@ using WebAPI.Models;
 
 namespace Api.Services
 {
-    public class GameCRUDService : IGameCRUDService
+    public class GameService : IGameService
     {
         private readonly IGameRepository _gameRepository;
 
-        public GameCRUDService(IGameRepository GameRepository)
+        public GameService(IGameRepository GameRepository)
         {
             _gameRepository = GameRepository;
         }
@@ -55,10 +55,21 @@ namespace Api.Services
         public async Task<Game> Update(int id, GameModel model)
         {
             var genres = await _gameRepository.GetGenres(model.Genres);
-            var game = new Game { Id = id, Name = model.Name, Description = model.Description, Price = model.Price, Genres = genres };
+            var game = new Game { Id =id, Name = model.Name, Description = model.Description, ImageUrl =model.ImageUrl, Price = model.Price, Genres = genres };
             var updatedGame = await _gameRepository.Update(id, game);
             return updatedGame;
         }
+
+        public async Task<List<Game>> Search(string search)
+        {
+            return await _gameRepository.Search(search);
+        }
+
+        public async Task<List<Game>> Filter(int genre)
+        {
+            return await _gameRepository.Filter(genre);
+        }
+
 
     }
 }

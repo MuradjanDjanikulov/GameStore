@@ -98,6 +98,49 @@ namespace DataAccess.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("DataAccess.Entity.Comment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("GameId")
+                        .IsRequired()
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("ParentCommentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId");
+
+                    b.HasIndex("ParentCommentId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Comments", (string)null);
+                });
+
             modelBuilder.Entity("DataAccess.Entity.Game", b =>
                 {
                     b.Property<int>("Id")
@@ -122,7 +165,7 @@ namespace DataAccess.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Games");
+                    b.ToTable("Games", (string)null);
                 });
 
             modelBuilder.Entity("DataAccess.Entity.Genre", b =>
@@ -137,14 +180,14 @@ namespace DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("ParentId")
+                    b.Property<int?>("ParentGenreId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ParentId");
+                    b.HasIndex("ParentGenreId");
 
-                    b.ToTable("Genres");
+                    b.ToTable("Genres", (string)null);
 
                     b.HasData(
                         new
@@ -156,25 +199,25 @@ namespace DataAccess.Migrations
                         {
                             Id = 2,
                             Name = "Rally",
-                            ParentId = 1
+                            ParentGenreId = 1
                         },
                         new
                         {
                             Id = 3,
                             Name = "Arcade",
-                            ParentId = 1
+                            ParentGenreId = 1
                         },
                         new
                         {
                             Id = 4,
                             Name = "Formula",
-                            ParentId = 1
+                            ParentGenreId = 1
                         },
                         new
                         {
                             Id = 5,
                             Name = "Off-road",
-                            ParentId = 1
+                            ParentGenreId = 1
                         },
                         new
                         {
@@ -200,19 +243,19 @@ namespace DataAccess.Migrations
                         {
                             Id = 10,
                             Name = "Fps",
-                            ParentId = 9
+                            ParentGenreId = 9
                         },
                         new
                         {
                             Id = 11,
                             Name = "Tps",
-                            ParentId = 9
+                            ParentGenreId = 9
                         },
                         new
                         {
                             Id = 12,
                             Name = "Misc",
-                            ParentId = 9
+                            ParentGenreId = 9
                         },
                         new
                         {
@@ -257,7 +300,7 @@ namespace DataAccess.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("GameGenre", b =>
@@ -272,7 +315,7 @@ namespace DataAccess.Migrations
 
                     b.HasIndex("GenresId");
 
-                    b.ToTable("GameGenre");
+                    b.ToTable("GameGenre", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -408,11 +451,34 @@ namespace DataAccess.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("DataAccess.Entity.Comment", b =>
+                {
+                    b.HasOne("DataAccess.Entity.Game", "Game")
+                        .WithMany("Comments")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DataAccess.Entity.Comment", "ParentComment")
+                        .WithMany("Replies")
+                        .HasForeignKey("ParentCommentId");
+
+                    b.HasOne("DataAccess.Entity.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Game");
+
+                    b.Navigation("ParentComment");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("DataAccess.Entity.Genre", b =>
                 {
                     b.HasOne("DataAccess.Entity.Genre", "ParentGenre")
                         .WithMany("SubGenres")
-                        .HasForeignKey("ParentId");
+                        .HasForeignKey("ParentGenreId");
 
                     b.Navigation("ParentGenre");
                 });
@@ -492,6 +558,16 @@ namespace DataAccess.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("DataAccess.Entity.Comment", b =>
+                {
+                    b.Navigation("Replies");
+                });
+
+            modelBuilder.Entity("DataAccess.Entity.Game", b =>
+                {
+                    b.Navigation("Comments");
                 });
 
             modelBuilder.Entity("DataAccess.Entity.Genre", b =>

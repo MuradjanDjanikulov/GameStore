@@ -1,14 +1,7 @@
 ﻿
-using Microsoft.EntityFrameworkCore;
 using DataAccess.Entity;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
-using System.Runtime.InteropServices;
+using Microsoft.EntityFrameworkCore;
 
 namespace DataAccess.Repository
 {
@@ -22,29 +15,39 @@ namespace DataAccess.Repository
         }
 
 
+        public async Task<Game> Get(int id)
+        {
+            var found = await _appDbContext.Games.
+                Include(g => g.Genres).
+                Include(g => g.Comments).
+                AsNoTracking().
+                FirstOrDefaultAsync(g => g.Id == id);
+
+            return found;
+        }
+
+        public async Task<IEnumerable<Game>> GetAll()
+        {
+            var found = await _appDbContext.Games.
+                Include(g => g.Genres).
+                Include(g => g.Comments).
+                AsNoTracking().
+                ToListAsync();
+
+            return found;
+        }
+
         public async Task<bool> Delete(int id)
         {
-            var Game = await _appDbContext.Games.FindAsync(id);
-            if (Game != null)
+            var game = await _appDbContext.Games.FindAsync(id);
+            if (game != null)
             {
-                _appDbContext.Games.Remove(Game);
+                _appDbContext.Games.Remove(game);
                 await _appDbContext.SaveChangesAsync();
                 return true;
             }
             return false;
         }
-
-        public async Task<Game> Get(int id)
-        {
-            return await _appDbContext.Games.Include(g => g.Genres).FirstOrDefaultAsync(g => g.Id == id);
-        }
-
-        public async Task<IEnumerable<Game>> GetAll()
-        {
-            return await _appDbContext.Games.Include(g=>g.Genres).ToListAsync();
-        }
-
-
         public async Task<string> SetImage(int id, IFormFile ImageFile)
         {
             var game = await _appDbContext.Games.FindAsync(id);
@@ -55,9 +58,9 @@ namespace DataAccess.Repository
 
             string filePath = Path.Combine(imageDir, "Images", uniqueFileName);
 
-            if (System.IO.File.Exists(filePath))
+            if (File.Exists(filePath))
             {
-                System.IO.File.Delete(filePath);
+                File.Delete(filePath);
             }
 
             using (var stream = new FileStream(filePath, FileMode.Create))
@@ -75,42 +78,82 @@ namespace DataAccess.Repository
 
         }
 
-        public async Task<Game> Create(Game Game)
+        public async Task<Game> Create(Game game)
         {
-            var game = await _appDbContext.Games.AddAsync(Game);
-            await _appDbContext.SaveChangesAsync();
-            return Game;
-        }
-
-        public async Task<Game> Update(int id, Game game)
-        {
-            var found = await _appDbContext.Games.FindAsync(id);
-            if (found != null) 
-            { 
-                _appDbContext.Entry(found).State = EntityState.Detached;
-                _appDbContext.Attach(game);
-                _appDbContext.Entry(game).State = EntityState.Modified;
+            var found = await _appDbContext.Games.Where(g => g.Name.Equals(game.Name)).FirstOrDefaultAsync();
+            if (found == null)
+            {
+                await _appDbContext.Games.AddAsync(game);
                 await _appDbContext.SaveChangesAsync();
                 return game;
             }
             return null;
+        }
 
+        public async Task<Game> Update(int id, Game game)
+        {
+            //_appDbContext.Entry(game).State = EntityState.Modified;
+            //var found = await _appDbContext.Games.Include(g => g.Genres).FirstOrDefaultAsync(g => g.Id == id);
+
+            var found = await _appDbContext.Games.FindAsync(id);
+            if (found != null)
+            {
+                await _appDbContext.Entry(found).Collection(g => g.Genres).LoadAsync();
+
+                found.Genres?.Clear();
+
+                found.Name = game.Name;
+                found.Description = game.Description;
+                found.Genres = game.Genres;
+                found.Price = game.Price;
+                found.ImageUrl = game.ImageUrl;
+                found.Genres = game.Genres;
+                await _appDbContext.SaveChangesAsync();
+            }
+
+            return found;
         }
 
         public async Task<HashSet<Genre>> GetGenres(HashSet<int> genres)
         {
-            //List<Genre> genreList = await _appDbContext.Genres.Where(x => genres.Contains(x.Name)).ToListAsync();
-            List<Genre> genreList = await _appDbContext.Genres.ToListAsync();
-            var result =  new List<Genre>();
-            foreach (var genre in genreList)
-            {
-                if (genres.Contains(genre.Id)) 
-                {
-                    result.Add(genre);
-                }
 
+            var genreList = await _appDbContext.Genres.Where(genre => genres.Contains(genre.Id)).ToListAsync();
+
+            return new HashSet<Genre>(genreList);
+
+        }
+
+        public async Task<List<Game>> Search(string search)
+        {
+            var searched = await _appDbContext.Games.
+                Where(game => game.Name.StartsWith(search)).
+                Include(g => g.Genres).
+                Include(g => g.Comments).
+                AsNoTracking().
+                ToListAsync();
+
+            if (searched != null)
+            {
+                return searched;
             }
-            return new HashSet<Genre>(result);
+            return new List<Game>();
+        }
+
+        public async Task<List<Game>> Filter(int genre)
+        {
+            var found = await _appDbContext.Genres.FirstOrDefaultAsync(g => g.Id == genre);
+            if (found != null)
+            {
+                var result = await _appDbContext.Games.
+                    Where(g => g.Genres.Any(g => g.Equals(found) || g.ParentGenre.Equals(found)))
+                    .Include(g => g.Genres)
+                    .Include(g => g.Comments)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                return result;
+            }
+            return new List<Game>();
         }
     }
 }

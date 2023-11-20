@@ -1,11 +1,11 @@
 ﻿using DataAccess.Entity;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace WebAPI.Models
 {
     public class GameModel
     {
-
         [Required]
         public string Name { get; set; }
 
@@ -19,4 +19,5 @@ namespace WebAPI.Models
 
         public virtual HashSet<int>? Genres { get; set; }
     }
+
 }

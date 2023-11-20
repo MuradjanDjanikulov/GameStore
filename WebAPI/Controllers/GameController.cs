@@ -1,28 +1,25 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Api.Models;
+﻿using Api.Models;
 using Api.Services;
-
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebAPI.Models;
-using DataAccess.Entity;
 
 namespace Api.Controllers
 {
-    
+
     [Route("api/game")]//[controller]/[action]
     [ApiController]
     public class GameController : ControllerBase
     {
-        private readonly IGameCRUDService _gameSvc;
+        private readonly IGameService _gameSvc;
 
-        public GameController(IGameCRUDService gameSvc)
+        public GameController(IGameService gameSvc)
         {
             _gameSvc = gameSvc;
         }
 
         [HttpGet]
-        [Route("get-all")]
+        [Route("get-all-games")]
         [AllowAnonymous]
         public async Task<IActionResult> GetAll()
         {
@@ -32,14 +29,14 @@ namespace Api.Controllers
         [HttpGet]
         [AllowAnonymous]
         [Route("get-game/{id}")]
-        public async Task<IActionResult> Get([FromRoute]int id)
+        public async Task<IActionResult> Get([FromRoute] int id)
         {
-            var foundGame = await _gameSvc.Get(id);
-            if (foundGame != null)
+            var found = await _gameSvc.Get(id);
+            if (found != null)
             {
-                return Ok(foundGame);
+                return Ok(found);
             }
-            return NotFound("Game not found");
+            return NotFound(new ResponseModel("Error", "Game not found"));
 
 
         }
@@ -49,9 +46,13 @@ namespace Api.Controllers
         [Route("create-game")]
         public async Task<IActionResult> Post([FromBody] GameModel game)
         {
-           var createdGame = await _gameSvc.Create(game);
-           var routeValue = new { id = createdGame.Id };
-           return CreatedAtRoute(routeValue, createdGame);
+            var created = await _gameSvc.Create(game);
+            if (created != null)
+            {
+                var routeValue = new { id = created.Id };
+                return CreatedAtRoute(routeValue, created);
+            }
+            return BadRequest(new ResponseModel("Error", "Game not created"));
         }
 
         [HttpPut]
@@ -60,11 +61,11 @@ namespace Api.Controllers
         public async Task<IActionResult> Put([FromRoute] int id, [FromBody] GameModel game)
         {
             var updatedGame = await _gameSvc.Update(id, game);
-            if(updatedGame != null)
+            if (updatedGame != null)
             {
                 return Ok(updatedGame);
             }
-            return NotFound("Game not found");
+            return NotFound(new ResponseModel("Error", "Game not found"));
         }
 
         [HttpDelete]
@@ -73,21 +74,21 @@ namespace Api.Controllers
         public async Task<IActionResult> Delete([FromRoute] int id)
         {
             bool result = await _gameSvc.Delete(id);
-            if (result) { return Ok("Game removed successfully"); }
-            return NotFound("Game not found");
+            if (result) { return Ok(new ResponseModel("Success", "Game removed successfully")); }
+            return NotFound(new ResponseModel("Error", "Game not found"));
         }
 
         [HttpPut]
         //[Authorize]
         [Route("set-game-image/{id}")]
-        public async Task<IActionResult> SetGameImage([FromRoute]int id, IFormFile ImageFile)
+        public async Task<IActionResult> SetGameImage([FromRoute] int id, IFormFile ImageFile)
         {
             if (ImageFile == null || ImageFile.Length == 0)
             {
                 return BadRequest(new ResponseModel("Error", "Invalid file"));
             }
 
-            var result = await _gameSvc.SetImage(id,ImageFile);
+            var result = await _gameSvc.SetImage(id, ImageFile);
 
             if (result != null)
             {
@@ -95,6 +96,28 @@ namespace Api.Controllers
             }
             return BadRequest(new ResponseModel("Error", "Image setting failed"));
 
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("search-game/{name}")]
+        public async Task<IActionResult> Search([FromRoute] string name)
+        {
+            if (name.Length < 3)
+            {
+                return BadRequest(new ResponseModel("Error", "Minimum name length is 3 characters"));
+            }
+            var searched = await _gameSvc.Search(name);
+            return Ok(searched);
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("filter-game/{genre}")]
+        public async Task<IActionResult> Filter([FromRoute] int genre)
+        {
+            var filtered = await _gameSvc.Filter(genre);
+            return Ok(filtered);
         }
 
     }
