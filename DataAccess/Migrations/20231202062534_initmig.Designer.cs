@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20231120181726_ghdsfsf")]
-    partial class ghdsfsf
+    [Migration("20231202062534_initmig")]
+    partial class initmig
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -81,6 +81,10 @@ namespace DataAccess.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("TokenSign")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("bit");
 
@@ -117,7 +121,6 @@ namespace DataAccess.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<int?>("GameId")
-                        .IsRequired()
                         .HasColumnType("int");
 
                     b.Property<bool>("IsDeleted")
@@ -169,6 +172,31 @@ namespace DataAccess.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Games");
+                });
+
+            modelBuilder.Entity("DataAccess.Entity.GameInfo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Amount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("GameInfos");
                 });
 
             modelBuilder.Entity("DataAccess.Entity.Genre", b =>
@@ -275,6 +303,51 @@ namespace DataAccess.Migrations
                             Id = 15,
                             Name = "Other"
                         });
+                });
+
+            modelBuilder.Entity("DataAccess.Entity.Order", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CommentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PaymentType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double?>("TotalPrice")
+                        .HasColumnType("float");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommentId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Orders");
                 });
 
             modelBuilder.Entity("DataAccess.Entity.RefreshToken", b =>
@@ -458,9 +531,7 @@ namespace DataAccess.Migrations
                 {
                     b.HasOne("DataAccess.Entity.Game", "Game")
                         .WithMany("Comments")
-                        .HasForeignKey("GameId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("GameId");
 
                     b.HasOne("DataAccess.Entity.Comment", "ParentComment")
                         .WithMany("Replies")
@@ -477,6 +548,17 @@ namespace DataAccess.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("DataAccess.Entity.GameInfo", b =>
+                {
+                    b.HasOne("DataAccess.Entity.Order", "order")
+                        .WithMany("GameInfos")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("order");
+                });
+
             modelBuilder.Entity("DataAccess.Entity.Genre", b =>
                 {
                     b.HasOne("DataAccess.Entity.Genre", "ParentGenre")
@@ -484,6 +566,21 @@ namespace DataAccess.Migrations
                         .HasForeignKey("ParentGenreId");
 
                     b.Navigation("ParentGenre");
+                });
+
+            modelBuilder.Entity("DataAccess.Entity.Order", b =>
+                {
+                    b.HasOne("DataAccess.Entity.Comment", "Comment")
+                        .WithMany()
+                        .HasForeignKey("CommentId");
+
+                    b.HasOne("DataAccess.Entity.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Comment");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DataAccess.Entity.RefreshToken", b =>
@@ -576,6 +673,11 @@ namespace DataAccess.Migrations
             modelBuilder.Entity("DataAccess.Entity.Genre", b =>
                 {
                     b.Navigation("SubGenres");
+                });
+
+            modelBuilder.Entity("DataAccess.Entity.Order", b =>
+                {
+                    b.Navigation("GameInfos");
                 });
 #pragma warning restore 612, 618
         }

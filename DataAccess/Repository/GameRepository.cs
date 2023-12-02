@@ -26,6 +26,13 @@ namespace DataAccess.Repository
             return found;
         }
 
+        public async Task<Game> GetByName(String name)
+        {
+            var found = await _appDbContext.Games.FirstOrDefaultAsync(g => g.Name == name);
+
+            return found;
+        }
+
         public async Task<IEnumerable<Game>> GetAll()
         {
             var found = await _appDbContext.Games.
@@ -92,7 +99,6 @@ namespace DataAccess.Repository
 
         public async Task<Game> Update(int id, Game game)
         {
-            //_appDbContext.Entry(game).State = EntityState.Modified;
             //var found = await _appDbContext.Games.Include(g => g.Genres).FirstOrDefaultAsync(g => g.Id == id);
 
             var found = await _appDbContext.Games.FindAsync(id);
@@ -114,12 +120,12 @@ namespace DataAccess.Repository
             return found;
         }
 
-        public async Task<HashSet<Genre>> GetGenres(HashSet<int> genres)
+        public async Task<List<Genre>> GetGenres(HashSet<int> genres)
         {
 
             var genreList = await _appDbContext.Genres.Where(genre => genres.Contains(genre.Id)).ToListAsync();
 
-            return new HashSet<Genre>(genreList);
+            return genreList;
 
         }
 

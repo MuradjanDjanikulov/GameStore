@@ -27,7 +27,7 @@ namespace DataAccess.Entity
         public int? GameId { get; set; }
 
         [ForeignKey("GameId")]
-        public virtual Game Game { get; set; }
+        public virtual Game? Game { get; set; }
 
         public virtual ICollection<Comment>? Replies { get; set; }
 

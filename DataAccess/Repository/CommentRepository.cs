@@ -103,6 +103,15 @@ namespace DataAccess.Repository
             return found;
         }
 
+        public async Task<IEnumerable<Comment>> GetAllByGame(int id)
+        {
+            var found = await _appDbContext.Comments.
+                Where(c => !c.IsDeleted && c.ParentCommentId == null && c.GameId == id).
+                Include(c => c.Replies).
+                AsNoTracking().
+                ToListAsync();
+            return found;
+        }
     }
 
 }

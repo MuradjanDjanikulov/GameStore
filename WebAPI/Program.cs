@@ -6,13 +6,13 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
+using WebAPI.Models;
 using WebAPI.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
-
-
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
@@ -30,6 +30,8 @@ builder.Services.AddIdentity<AppUser, IdentityRole>().AddEntityFrameworkStores<A
                 options.Password.RequireNonAlphanumeric = false;
                 options.Password.RequiredUniqueChars = 5;});
 */
+
+
 var tokenValidationParameters = new TokenValidationParameters()
 {
     ValidateIssuerSigningKey = true,
@@ -46,10 +48,11 @@ var tokenValidationParameters = new TokenValidationParameters()
 
     ValidateLifetime = true,
 
-    ClockSkew = TimeSpan.Zero
+    ClockSkew = TimeSpan.Zero,
 };
 
 builder.Services.AddSingleton(tokenValidationParameters);
+
 
 builder.Services.AddAuthentication(options =>
 {
@@ -64,6 +67,28 @@ builder.Services.AddAuthentication(options =>
         options.RequireHttpsMetadata = false;
 
         options.TokenValidationParameters = tokenValidationParameters;
+
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+
+                var claimsIdentity = context.Principal.Identity as ClaimsIdentity;
+                if (claimsIdentity != null)
+                {
+                    var tokenSignClaim = claimsIdentity.FindFirst("TokenSign");
+                    var userService = context.HttpContext.RequestServices.GetRequiredService<TokenService>();
+                    var user = await userService.GetUserByTokenSign(tokenSignClaim.Value.ToString());
+                    if (tokenSignClaim == null || string.IsNullOrEmpty(tokenSignClaim.Value) || user == null || !tokenSignClaim.Value.ToString().Equals(user.TokenSign))
+                    {
+                        context.Fail("TokenSign claim is required.");
+                    }
+                }
+                //return Task.CompletedTask;
+            }
+        };
+
+
     });
 
 
@@ -84,11 +109,17 @@ builder.Services.AddAuthorization(options =>
 });
 builder.Services.AddScoped<IGameService, GameService>();
 
+builder.Services.AddScoped<TokenService>();
+
 builder.Services.AddScoped<ICommentService, CommentService>();
 
 builder.Services.AddScoped<IGameRepository, GameRepository>();
 
 builder.Services.AddScoped<ICommentRepository, CommentRepository>();
+
+builder.Services.AddScoped<IGenericService<OrderModel, Order>, OrderService>();
+
+builder.Services.AddScoped<IGenericRepository<Order>, OrderRepository>();
 
 builder.Services.AddEndpointsApiExplorer();
 

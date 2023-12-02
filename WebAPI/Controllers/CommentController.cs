@@ -20,10 +20,18 @@ namespace Api.Controllers
 
         [HttpGet]
         [Route("get-all-comments")]
-        [AllowAnonymous]
+        [Authorize(Policy = "RequireManager")]
         public async Task<IActionResult> GetAll()
         {
             return Ok(await _commentSvc.GetAll());
+        }
+
+        [HttpGet]
+        [Route("get-all-comments-by-game/{id}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAllByGame([FromRoute] int id)
+        {
+            return Ok(await _commentSvc.GetAllByGame(id));
         }
 
         [HttpGet]
@@ -41,8 +49,8 @@ namespace Api.Controllers
         }
 
         [HttpPost]
-        //[Authorize]
         [Route("create-comment")]
+        [AllowAnonymous]
         public async Task<IActionResult> Post([FromBody] CommentModel comment)
         {
             comment.Username = "anonymous";
@@ -62,20 +70,25 @@ namespace Api.Controllers
         }
 
         [HttpPut]
-        //[Authorize(Policy = "RequireManager")]
+        [Authorize]
         [Route("update-comment/{id}")]
         public async Task<IActionResult> Put([FromRoute] int id, [FromBody] CommentModel comment)
         {
-            var updated = await _commentSvc.Update(id, comment);
-            if (updated != null)
+
+            if (comment.UserId.Equals(HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)))
             {
-                return Ok(updated);
+                var updated = await _commentSvc.Update(id, comment);
+                if (updated != null)
+                {
+                    return Ok(updated);
+                }
+
             }
             return NotFound(new ResponseModel("Error", "Comment not found"));
         }
 
         [HttpPut]
-        //[Authorize(Policy = "RequireManager")]
+        [Authorize]
         [Route("remove-comment/{id}")]
         public async Task<IActionResult> Delete([FromRoute] int id)
         {
@@ -85,20 +98,25 @@ namespace Api.Controllers
         }
 
         [HttpPut]
-        //[Authorize]
+        [Authorize]
         [Route("restore-comment/{id}")]
         public async Task<IActionResult> Restore([FromRoute] int id)
         {
-            var restored = await _commentSvc.Restore(id);
-            if (restored != null)
+            var found = await _commentSvc.Get(id);
+            if (found != null && found.UserId.Equals(HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)))
             {
-                return Ok(restored);
+                var restored = await _commentSvc.Restore(id);
+                if (restored != null)
+                {
+                    return Ok(restored);
+                }
             }
+
             return BadRequest(new ResponseModel("Error", "Comment not found"));
         }
 
         [HttpDelete]
-        //[Authorize(Policy = "RequireManager")]
+        [Authorize(Policy = "RequireManager")]
         [Route("clear-comment/{id}")]
         public async Task<IActionResult> Clear([FromRoute] int id)
         {

@@ -1,6 +1,6 @@
-﻿using Api.Models;
-using DataAccess.Entity;
+﻿using DataAccess.Entity;
 using DataAccess.Repository;
+using Microsoft.IdentityModel.Tokens;
 using WebAPI.Models;
 
 
@@ -15,7 +15,7 @@ namespace Api.Services
             _gameRepository = GameRepository;
         }
 
-        
+
         public async Task<bool> Delete(int id)
         {
             return await _gameRepository.Delete(id);
@@ -25,7 +25,7 @@ namespace Api.Services
         public async Task<Game> Get(int id)
         {
             var game = await _gameRepository.Get(id);
-            
+
             return game;
         }
 
@@ -44,18 +44,29 @@ namespace Api.Services
 
         public async Task<Game> Create(GameModel model)
         {
-            var genres = await _gameRepository.GetGenres(model.Genres);
-            var game = new Game { Name = model.Name, Description = model.Description, Price = model.Price, Genres = genres };
+
+            var game = new Game { Name = model.Name, Description = model.Description, Price = model.Price };
+            if (model.Genres != null)
+            {
+                var genres = await _gameRepository.GetGenres(model.Genres);
+                if (!genres.IsNullOrEmpty()) { game.Genres = new HashSet<Genre>(genres); }
+            }
+
             var createdGame = await _gameRepository.Create(game);
 
             return createdGame;
 
         }
-        
+
         public async Task<Game> Update(int id, GameModel model)
         {
-            var genres = await _gameRepository.GetGenres(model.Genres);
-            var game = new Game { Id =id, Name = model.Name, Description = model.Description, ImageUrl =model.ImageUrl, Price = model.Price, Genres = genres };
+            var game = new Game { Id = id, Name = model.Name, Description = model.Description, ImageUrl = model.ImageUrl, Price = model.Price };
+            if (model.Genres != null)
+            {
+                var genres = await _gameRepository.GetGenres(model.Genres);
+                if (!genres.IsNullOrEmpty()) { game.Genres = new HashSet<Genre>(genres); }
+            }
+
             var updatedGame = await _gameRepository.Update(id, game);
             return updatedGame;
         }

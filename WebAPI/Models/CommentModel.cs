@@ -14,7 +14,7 @@ namespace WebAPI.Models
 
         public int? ParentCommentId { get; set; }
 
-        public int GameId { get; set; }
+        public int? GameId { get; set; }
 
 
     }

@@ -1,5 +1,4 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 
 namespace WebAPI.Utils
@@ -9,7 +8,7 @@ namespace WebAPI.Utils
     {
         protected override ValidationResult IsValid(object value, ValidationContext validationContext)
         {
-            string password = "";
+            string password = value as string;
             const string pattern = @"^(?=.*[A-Z])";
 
             if (Regex.IsMatch(password, pattern))
@@ -25,7 +24,7 @@ namespace WebAPI.Utils
     {
         protected override ValidationResult IsValid(object value, ValidationContext validationContext)
         {
-            string password="";
+            string password = value as string;
             const string pattern = @"^(?=.*[a-z])";
 
             if (Regex.IsMatch(password, pattern))
@@ -41,7 +40,7 @@ namespace WebAPI.Utils
     {
         protected override ValidationResult IsValid(object value, ValidationContext validationContext)
         {
-            string password = "";
+            string password = value as string;
             const string pattern = @"^(?=.*[0-9])";
 
             if (Regex.IsMatch(password, pattern))
@@ -58,7 +57,7 @@ namespace WebAPI.Utils
     {
         protected override ValidationResult IsValid(object value, ValidationContext validationContext)
         {
-            string password = "";
+            string password = value as string;
             const string pattern = @"^(?=.*[^a-zA-Z0-9])\S+$";
 
             if (Regex.IsMatch(password, pattern))
@@ -69,7 +68,7 @@ namespace WebAPI.Utils
             return new ValidationResult(ErrorMessage);
         }
     }
-//    [RegularExpression(@"^(?=.*[^a-zA-Z0-9])\S+$", ErrorMessage = "The {0} must contain at least one non-alphabetic and non-numeric symbol.")]
+    //    [RegularExpression(@"^(?=.*[^a-zA-Z0-9])\S+$", ErrorMessage = "The {0} must contain at least one non-alphabetic and non-numeric symbol.")]
 
 
 }

@@ -11,25 +11,15 @@ namespace DataAccess.Repository
         }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Game> Games { get; set; }
+        public DbSet<GameInfo> GameInfos { get; set; }
         public DbSet<Genre> Genres { get; set; }
         public DbSet<Comment> Comments { get; set; }
+        public DbSet<Order> Orders { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            modelBuilder.Entity<AppUser>()
-                .Property(u => u.ImageUrl)
-                .IsRequired(false);
-
-            modelBuilder.Entity<Comment>()
-                .Property(c => c.UserId)
-                .IsRequired(false);
-
-            modelBuilder.Entity<Comment>()
-                .Property(c => c.ParentCommentId)
-                .IsRequired(false);
-
             modelBuilder.Entity<Genre>()
                 .HasData(
                 new Genre { Id = 1, Name = "Strategy" },
@@ -48,6 +38,23 @@ namespace DataAccess.Repository
                 new Genre { Id = 14, Name = "Puzzle & Skill" },
                 new Genre { Id = 15, Name = "Other" }
                 );
+
+
+            /*modelBuilder.Entity<Comment>()
+                .Property(c => c.Game)
+                .IsRequired(false);
+*/
+            /*            modelBuilder.Entity<AppUser>()
+                            .Property(u => u.ImageUrl)
+                            .IsRequired(false);
+
+                        modelBuilder.Entity<Comment>()
+                            .Property(c => c.UserId)
+                            .IsRequired(false);
+
+                        modelBuilder.Entity<Comment>()
+                            .Property(c => c.ParentCommentId)
+                            .IsRequired(false);*/
 
 
             /*            modelBuilder.Entity<Game>()

@@ -7,9 +7,10 @@ namespace DataAccess.Repository
     {
 
         Task<string> SetImage(int id, IFormFile formFile);
-        Task<HashSet<Genre>> GetGenres(HashSet<int> genres);
+        Task<List<Genre>> GetGenres(HashSet<int> genres);
         Task<List<Game>> Search(string search);
         Task<List<Game>> Filter(int genre);
+        Task<Game> GetByName(string name);
 
     }
 

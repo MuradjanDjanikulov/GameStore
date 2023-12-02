@@ -19,29 +19,23 @@ namespace Api.Controllers
     public class AuthController : ControllerBase
     {
         private readonly Microsoft.AspNetCore.Identity.UserManager<AppUser> _userManager;
-        //private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IConfiguration _configuration;
         private readonly AppDbContext _context;
         private readonly TokenValidationParameters _tokenValidationParameters;
-        //private readonly SignInManager<AppUser> _signInManager;
+
 
 
         public AuthController(
             Microsoft.AspNetCore.Identity.UserManager<AppUser> userManager,
-            //RoleManager<IdentityRole> roleManager, 
             IConfiguration configuration,
             AppDbContext context,
             TokenValidationParameters tokenValidationParameters
-            //SignInManager<AppUser> signInManager
             )
         {
             _userManager = userManager;
             _configuration = configuration;
-            //_roleManager = roleManager;
             _context = context;
             _tokenValidationParameters = tokenValidationParameters;
-            //_signInManager = signInManager;
-
         }
 
         [Route("register")]
@@ -63,7 +57,7 @@ namespace Api.Controllers
 
             var user = new AppUser
             {
-                SecurityStamp = Guid.NewGuid().ToString(),
+                TokenSign = Guid.NewGuid().ToString(),
                 UserName = registerModel.Username,
                 Email = registerModel.Email,
                 FirstName = registerModel.Firstname,
@@ -97,8 +91,10 @@ namespace Api.Controllers
 
             if (foundUser != null)
             {
-                var result = await _userManager.ChangePasswordAsync(foundUser, passwordModel.OldPassword, passwordModel.NewPassword);
 
+                foundUser.TokenSign = Guid.NewGuid().ToString();
+                await _userManager.UpdateAsync(foundUser);
+                var result = await _userManager.ChangePasswordAsync(foundUser, passwordModel.OldPassword, passwordModel.NewPassword);
                 if (result.Succeeded)
                 {
                     var stored = await _context.RefreshTokens.FirstOrDefaultAsync(token => token.User.Id == foundUser.Id);
@@ -106,10 +102,8 @@ namespace Api.Controllers
                     {
                         _context.RefreshTokens.Remove(stored);
                         await _context.SaveChangesAsync();
-
-                        return Ok(new ResponseModel("Success", "Password changed successfully"));
-
                     }
+                    return Ok(new ResponseModel("Success", "Password changed successfully"));
 
                 }
 
@@ -158,8 +152,6 @@ namespace Api.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginModel LoginModel)
         {
-            //var result = await _signInManager.PasswordSignInAsync(LoginModel.UserName, LoginModel.Password, LoginModel.RememberMe, lockoutOnFailure: false);
-
             var foundUser = await _userManager.FindByNameAsync(LoginModel.UserName);
             if (foundUser != null && await _userManager.CheckPasswordAsync(foundUser, LoginModel.Password))
             {
@@ -170,8 +162,8 @@ namespace Api.Controllers
 
         }
 
-
-        [HttpPost("refresh-token")]
+        [Route("refresh-token")]
+        [HttpPost]
         [AllowAnonymous]
         public async Task<IActionResult> RefreshToken([FromBody] TokenModel TokenModel)
         {
@@ -223,8 +215,8 @@ namespace Api.Controllers
             {
                 new Claim(ClaimTypes.Name, User.UserName),
                 new Claim(ClaimTypes.NameIdentifier, User.Id),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                //new Claim(ClaimTypes.Role, UserRoles.User)
+                //new Claim(JwtRegisteredClaimNames.Name, User.TokenSign),
+                new Claim("TokenSign", User.TokenSign),
             };
 
             foreach (var role in roles)
@@ -270,18 +262,19 @@ namespace Api.Controllers
         }
 
         [HttpDelete, Authorize]
-        [Route("revoke-refresh-token")]
+        [Route("revoke-token")]
         public async Task<IActionResult> RevokeToken()
         {
             var username = HttpContext.User.Identity.Name;
             var user = await _userManager.FindByNameAsync(username);
+            user.TokenSign = Guid.NewGuid().ToString();
+            await _userManager.UpdateAsync(user);
 
             var stored = await _context.RefreshTokens.FirstOrDefaultAsync(token => token.User.Id == user.Id);
             if (stored != null && stored.DateExpire >= DateTime.UtcNow)
             {
                 _context.RefreshTokens.Remove(stored);
                 await _context.SaveChangesAsync();
-                //await _signInManager.SignOutAsync();
                 return Ok(new ResponseModel("Success", "Refresh token revoked successfully"));
             }
 
@@ -326,8 +319,8 @@ namespace Api.Controllers
 
 
         [HttpGet, Authorize]
-        [Route("get-user")]
-        public async Task<IActionResult> GetUser()
+        [Route("get-current-user")]
+        public async Task<IActionResult> GetCurrentUser()
         {
             var username = HttpContext.User.Identity.Name;
             var user = await _userManager.FindByNameAsync(username);
@@ -335,6 +328,15 @@ namespace Api.Controllers
             return Ok(userDb);
         }
 
+        [HttpGet]
+        [Route("get-user")]
+        [Authorize(Policy = "RequireAdmin")]
+        public async Task<IActionResult> GetUser(String Username)
+        {
+            var user = await _userManager.FindByNameAsync(Username);
+            var userDb = new UserModel { FirstName = user.FirstName, LastName = user.LastName, UserName = user.UserName, Email = user.Email, ImageUrl = user.ImageUrl };
+            return Ok(userDb);
+        }
 
         [HttpGet]
         [Route("all-users")]
@@ -353,9 +355,9 @@ namespace Api.Controllers
         }
 
         [HttpDelete]
-        [Route("remove-user")]
+        [Route("remove-user/{username}")]
         [Authorize(Policy = "RequireAdmin")]
-        public async Task<IActionResult> RemoveUser(String Username)
+        public async Task<IActionResult> RemoveUser([FromRoute] String Username)
         {
             var usernameDb = HttpContext.User.Identity.Name;
             if (usernameDb.Equals(Username))
@@ -378,6 +380,15 @@ namespace Api.Controllers
             }
             return BadRequest(new ResponseModel("Error", "User deletion failed"));
 
+        }
+
+
+        [HttpGet]
+        [Route("test")]
+        [Authorize]
+        public async Task<IActionResult> GetTest()
+        {
+            return Ok("Welcome to test method");
         }
 
     }

@@ -1,12 +1,6 @@
-﻿using Api.Models;
-using DataAccess.Entity;
-using Microsoft.AspNetCore.Builder;
+﻿using DataAccess.Entity;
+using DataAccess.Repository;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace WebAPI.Utils
 {
@@ -18,13 +12,68 @@ namespace WebAPI.Utils
             {
                 var roleManager = serviceScope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
                 var userManager = serviceScope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+                var gameRepository = serviceScope.ServiceProvider.GetRequiredService<IGameRepository>();
+
+                var existingGame = await gameRepository.GetByName("Counter Strike 1.6");
+
+                if (existingGame == null)
+                {
+                    var newGame = new Game
+                    {
+                        Name = "Counter Strike 1.6",
+                        Description = "Counter Strike 1.6 Description",
+                        Price = 250
+                    };
+
+                    var existingGenres = await gameRepository.GetGenres(new HashSet<int>(new int[] { 9, 15 }));
+
+                    if (existingGenres != null) { newGame.Genres = new HashSet<Genre>(existingGenres); }
+
+                    await gameRepository.Create(newGame);
+                }
+                existingGame = await gameRepository.GetByName("Counter Strike GO");
+
+                if (existingGame == null)
+                {
+                    var newGame = new Game
+                    {
+                        Name = "Counter Strike GO",
+                        Description = "Counter Strike GO Description",
+                        Price = 350
+                    };
+
+                    var existingGenres = await gameRepository.GetGenres(new HashSet<int>(new int[] { 9, 15 }));
+
+                    if (existingGenres != null) { newGame.Genres = new HashSet<Genre>(existingGenres); }
+
+                    await gameRepository.Create(newGame);
+                }
+
+                existingGame = await gameRepository.GetByName("Need for Speed: Underground");
+
+                if (existingGame == null)
+                {
+                    var newGame = new Game
+                    {
+                        Name = "Need for Speed: Underground",
+                        Description = "Need for Speed: Underground Description",
+                        Price = 300
+                    };
+
+                    var existingGenres = await gameRepository.GetGenres(new HashSet<int>(new int[] { 8, 15 }));
+
+                    if (existingGenres != null) { newGame.Genres = new HashSet<Genre>(existingGenres); }
+
+                    await gameRepository.Create(newGame);
+                }
+
 
                 if (!await roleManager.RoleExistsAsync(UserRoles.Admin))
                 {
                     await roleManager.CreateAsync(new IdentityRole(UserRoles.Admin));
                 }
 
-                if (!await roleManager.RoleExistsAsync(UserRoles.Manager)) 
+                if (!await roleManager.RoleExistsAsync(UserRoles.Manager))
                 {
                     await roleManager.CreateAsync(new IdentityRole(UserRoles.Manager));
                 }
@@ -43,7 +92,7 @@ namespace WebAPI.Utils
 
                     var user = new AppUser
                     {
-                        SecurityStamp = Guid.NewGuid().ToString(),
+                        TokenSign = Guid.NewGuid().ToString(),
                         UserName = "admin",
                         Email = "admin@example.com",
                         FirstName = "administrator",
@@ -65,7 +114,7 @@ namespace WebAPI.Utils
 
                     var user = new AppUser
                     {
-                        SecurityStamp = Guid.NewGuid().ToString(),
+                        TokenSign = Guid.NewGuid().ToString(),
                         UserName = "user",
                         Email = "user@example.com",
                         FirstName = "user",
@@ -87,7 +136,7 @@ namespace WebAPI.Utils
 
                     var user = new AppUser
                     {
-                        SecurityStamp = Guid.NewGuid().ToString(),
+                        TokenSign = Guid.NewGuid().ToString(),
                         UserName = "manager",
                         Email = "manager@example.com",
                         FirstName = "manager",

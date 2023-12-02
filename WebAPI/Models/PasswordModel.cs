@@ -12,11 +12,11 @@ namespace WebAPI.Models
 
         [Required(ErrorMessage = "new password is required")]
         [Display(Name = "New password")]
-        [StringLength(10, ErrorMessage = "The {0} must be at least {2} characters long.", MinimumLength = 8)]
-        [UppercaseLetter(ErrorMessage = "The {0} must contain at least one uppercase letter.")]
-        [LowercaseLetter(ErrorMessage = "The {0} must contain at least one lowercase letter.")]
-        [NumericSymbol(ErrorMessage = "The {0} must contain at least one numeric symbol.")]
-        [NonAlphanumericSymbol(ErrorMessage = "The {0} must contain at least one non-alphabetic and non-numeric symbol.")]
+        [StringLength(20, ErrorMessage = "The {0} must be at least {2} characters long.", MinimumLength = 8)]
+        [UppercaseLetter(ErrorMessage = "The new password must contain at least one uppercase letter.")]
+        [LowercaseLetter(ErrorMessage = "The new password must contain at least one lowercase letter.")]
+        [NumericSymbol(ErrorMessage = "The new password must contain at least one numeric symbol.")]
+        [NonAlphanumericSymbol(ErrorMessage = "The new password must contain at least one non-alphabetic and non-numeric symbol.")]
         public string NewPassword { get; set; }
 
         [DataType(DataType.Password)]

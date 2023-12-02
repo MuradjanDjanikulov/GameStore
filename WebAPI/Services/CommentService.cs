@@ -38,6 +38,10 @@ namespace Api.Services
             return await _commentRepository.GetAll();
         }
 
+        public async Task<IEnumerable<Comment>> GetAllByGame(int id)
+        {
+            return await _commentRepository.GetAllByGame(id);
+        }
 
         public async Task<Comment> Create(CommentModel model)
         {
@@ -46,7 +50,6 @@ namespace Api.Services
                 Content = model.Content,
                 CreatedDate = DateTime.UtcNow,
                 Username = model.Username,
-                IsDeleted = false,
                 UserId = model.UserId,
                 ParentCommentId = model.ParentCommentId,
                 GameId = model.GameId

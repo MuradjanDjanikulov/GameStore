@@ -42,7 +42,7 @@ namespace Api.Controllers
         }
 
         [HttpPost]
-        //[Authorize(Policy = "RequireManager")]
+        [Authorize(Policy = "RequireManager")]
         [Route("create-game")]
         public async Task<IActionResult> Post([FromBody] GameModel game)
         {
@@ -56,7 +56,7 @@ namespace Api.Controllers
         }
 
         [HttpPut]
-        //[Authorize(Policy = "RequireManager")]
+        [Authorize(Policy = "RequireManager")]
         [Route("update-game/{id}")]
         public async Task<IActionResult> Put([FromRoute] int id, [FromBody] GameModel game)
         {
@@ -69,7 +69,7 @@ namespace Api.Controllers
         }
 
         [HttpDelete]
-        //[Authorize(Policy = "RequireManager")]
+        [Authorize(Policy = "RequireManager")]
         [Route("remove-game/{id}")]
         public async Task<IActionResult> Delete([FromRoute] int id)
         {
@@ -79,7 +79,7 @@ namespace Api.Controllers
         }
 
         [HttpPut]
-        //[Authorize]
+        [Authorize(Policy = "RequireManager")]
         [Route("set-game-image/{id}")]
         public async Task<IActionResult> SetGameImage([FromRoute] int id, IFormFile ImageFile)
         {
