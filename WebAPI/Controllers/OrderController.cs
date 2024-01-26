@@ -2,6 +2,7 @@
 using Api.Services;
 using DataAccess.Entity;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using WebAPI.Models;
@@ -11,6 +12,8 @@ namespace Api.Controllers
 
     [Route("api/order")]
     [ApiController]
+    [EnableCors("CorsPolicy")]
+
     public class OrderController : ControllerBase
     {
         private readonly IGenericService<OrderModel, Order> _orderSvc;

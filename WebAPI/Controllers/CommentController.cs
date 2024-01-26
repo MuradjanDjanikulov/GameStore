@@ -1,6 +1,7 @@
 ﻿using Api.Models;
 using Api.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using WebAPI.Models;
@@ -10,6 +11,7 @@ namespace Api.Controllers
 
     [Route("api/comment")]
     [ApiController]
+    [EnableCors("CorsPolicy")]
     public class CommentController : ControllerBase
     {
         private readonly ICommentService _commentSvc;
@@ -74,8 +76,9 @@ namespace Api.Controllers
         [Route("update-comment/{id}")]
         public async Task<IActionResult> Put([FromRoute] int id, [FromBody] CommentModel comment)
         {
-
-            if (comment.UserId.Equals(HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)))
+            var found = await _commentSvc.Get(id);
+            Console.WriteLine(found);
+            if (found != null && found.UserId.Equals(HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)))
             {
                 var updated = await _commentSvc.Update(id, comment);
                 if (updated != null)
@@ -89,7 +92,7 @@ namespace Api.Controllers
 
         [HttpPut]
         [Authorize]
-        [Route("remove-comment/{id}")]
+        [Route("inactivate-comment/{id}")]
         public async Task<IActionResult> Delete([FromRoute] int id)
         {
             bool result = await _commentSvc.Delete(id);
@@ -99,7 +102,7 @@ namespace Api.Controllers
 
         [HttpPut]
         [Authorize]
-        [Route("restore-comment/{id}")]
+        [Route("activate-comment/{id}")]
         public async Task<IActionResult> Restore([FromRoute] int id)
         {
             var found = await _commentSvc.Get(id);

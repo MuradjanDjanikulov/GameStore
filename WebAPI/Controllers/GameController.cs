@@ -1,6 +1,7 @@
 ﻿using Api.Models;
 using Api.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using WebAPI.Models;
 
@@ -9,6 +10,8 @@ namespace Api.Controllers
 
     [Route("api/game")]//[controller]/[action]
     [ApiController]
+    [EnableCors("CorsPolicy")]
+
     public class GameController : ControllerBase
     {
         private readonly IGameService _gameSvc;
@@ -73,6 +76,7 @@ namespace Api.Controllers
         [Route("remove-game/{id}")]
         public async Task<IActionResult> Delete([FromRoute] int id)
         {
+
             bool result = await _gameSvc.Delete(id);
             if (result) { return Ok(new ResponseModel("Success", "Game removed successfully")); }
             return NotFound(new ResponseModel("Error", "Game not found"));
@@ -114,9 +118,9 @@ namespace Api.Controllers
         [HttpGet]
         [AllowAnonymous]
         [Route("filter-game/{genre}")]
-        public async Task<IActionResult> Filter([FromRoute] int genre)
+        public async Task<IActionResult> Filter([FromRoute] int[] genres)
         {
-            var filtered = await _gameSvc.Filter(genre);
+            var filtered = await _gameSvc.Filter(genres);
             return Ok(filtered);
         }
 

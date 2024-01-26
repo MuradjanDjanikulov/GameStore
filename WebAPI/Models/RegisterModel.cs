@@ -4,21 +4,19 @@ namespace Api.Models
 {
     public class RegisterModel
     {
-        [Required(ErrorMessage = "firstname is required")]
+        [Required]
         public string Firstname { get; set; }
 
-        [Required(ErrorMessage = "lastname is required")]
+        [Required]
         public string Lastname { get; set; }
 
-        [Required(ErrorMessage = "username is required")]
-        [StringLength(20, ErrorMessage = "The {0} must be at least {2} characters long.", MinimumLength = 4)]
+        [StringLength(20, ErrorMessage = "The {0} must be at least {2} characters long.", MinimumLength = 2)]
         public string Username { get; set; }
 
         [EmailAddress]
-        [Required(ErrorMessage = "email is required")]
         public string Email { get; set; }
 
-        [Required(ErrorMessage = "password is required")]
+        [Required]
         public string Password { get; set; }
 
         [DataType(DataType.Password)]

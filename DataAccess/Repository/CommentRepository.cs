@@ -17,10 +17,12 @@ namespace DataAccess.Repository
         public async Task<Comment> Get(int id)
         {
             var found = await _appDbContext.Comments.
-                Where(c => !c.IsDeleted).
+                //Where(c => !c.IsDeleted).
+                Where(c => c.Id == id).
                 Include(c => c.Replies).
                 AsNoTracking().
-                FirstOrDefaultAsync(c => c.Id == id);
+                SingleOrDefaultAsync();
+            //FirstOrDefaultAsync(c => c.Id == id);
             return found;
         }
 
@@ -84,6 +86,7 @@ namespace DataAccess.Repository
             if (found != null)
             {
                 found.Content = comment.Content;
+                _appDbContext.Comments.Update(found);
                 await _appDbContext.SaveChangesAsync();
             }
 

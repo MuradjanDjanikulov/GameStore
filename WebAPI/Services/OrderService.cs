@@ -36,13 +36,13 @@ namespace Api.Services
             List<GameInfo> games = new List<GameInfo>();
             foreach (var item in model.GameInfos)
             {
-                var gameInfo = new GameInfo { Name = item.Name, Amount = item.Amount };
+                var gameInfo = new GameInfo { GameId = item.Id, Amount = item.Amount };
                 games.Add(gameInfo);
             }
             var order = new Order
             {
                 FirstName = model.FirstName,
-                LastName = model.FirstName,
+                LastName = model.LastName,
                 Email = model.Email,
                 Phone = model.Phone,
                 PaymentType = model.PaymentType,
@@ -74,7 +74,7 @@ namespace Api.Services
             List<GameInfo> games = new List<GameInfo>();
             foreach (var item in model.GameInfos)
             {
-                var gameInfo = new GameInfo { Name = item.Name, Amount = item.Amount };
+                var gameInfo = new GameInfo { GameId = item.Id, Amount = item.Amount };
                 games.Add(gameInfo);
             }
 

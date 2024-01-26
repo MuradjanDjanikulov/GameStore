@@ -152,6 +152,16 @@ builder.Services.AddSwaggerGen(option =>
 });
 builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("CorsPolicy",
+        builder => builder
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .WithExposedHeaders("Authorization"));
+});
+
 
 var app = builder.Build();
 
@@ -163,6 +173,8 @@ if (app.Environment.IsDevelopment())
         c.ShowCommonExtensions();
     });
 }
+
+app.UseCors("CorsPolicy");
 
 app.UseHttpsRedirection();
 

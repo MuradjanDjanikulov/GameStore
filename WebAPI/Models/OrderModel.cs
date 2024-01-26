@@ -23,7 +23,7 @@ namespace WebAPI.Models
         [ValidEnum]
         public PaymentType PaymentType { get; set; }
 
-        [Required]
+        [MinLength(1, ErrorMessage = "At least one game is required")]
         public ICollection<GameInfoModel> GameInfos { get; set; }
 
         public CommentModel? CommentModel { get; set; }

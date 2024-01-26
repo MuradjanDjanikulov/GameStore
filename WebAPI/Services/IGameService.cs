@@ -8,7 +8,7 @@ namespace Api.Services
     {
         Task<string> SetImage(int id, IFormFile formFile);
         Task<List<Game>> Search(string search);
-        Task<List<Game>> Filter(int genre);
+        Task<List<Game>> Filter(int[] genres);
 
 
     }

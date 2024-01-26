@@ -76,9 +76,9 @@ namespace Api.Services
             return await _gameRepository.Search(search);
         }
 
-        public async Task<List<Game>> Filter(int genre)
+        public async Task<List<Game>> Filter(int[] genres)
         {
-            return await _gameRepository.Filter(genre);
+            return await _gameRepository.Filter(genres);
         }
 
 

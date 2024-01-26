@@ -19,7 +19,7 @@ namespace DataAccess.Repository
         {
             var found = await _appDbContext.Games.
                 Include(g => g.Genres).
-                Include(g => g.Comments).
+                Include(g => g.Comments.Where(c => !c.IsDeleted)).
                 AsNoTracking().
                 FirstOrDefaultAsync(g => g.Id == id);
 
@@ -49,6 +49,9 @@ namespace DataAccess.Repository
             var game = await _appDbContext.Games.FindAsync(id);
             if (game != null)
             {
+                List<Comment> comments = _appDbContext.Comments.Where(c => c.GameId == id).ToList();
+                _appDbContext.Comments.RemoveRange(comments);
+                await _appDbContext.SaveChangesAsync();
                 _appDbContext.Games.Remove(game);
                 await _appDbContext.SaveChangesAsync();
                 return true;
@@ -59,11 +62,13 @@ namespace DataAccess.Repository
         {
             var game = await _appDbContext.Games.FindAsync(id);
 
-            string imageDir = Directory.GetCurrentDirectory();
+            //string imageDir = Directory.GetCurrentDirectory();
+            string imageDir = "C:\\MyDisk\\Web development\\NET Questions\\Online\\module_4\\react-test\\public\\images";
 
-            string uniqueFileName = $"{game.Name}.jpeg";
+            string uniqueFileName = $"{game.Id}.jpeg";
 
-            string filePath = Path.Combine(imageDir, "Images", uniqueFileName);
+            //string filePath = Path.Combine(imageDir, "Images", uniqueFileName);
+            string filePath = Path.Combine(imageDir, uniqueFileName);
 
             if (File.Exists(filePath))
             {
@@ -75,7 +80,8 @@ namespace DataAccess.Repository
                 await ImageFile.CopyToAsync(stream);
             }
 
-            game.ImageUrl = filePath;
+            //game.ImageUrl = filePath;
+            game.ImageUrl = uniqueFileName;
 
             var updatedGame = _appDbContext.Games.Attach(game);
             updatedGame.State = EntityState.Modified;
@@ -112,7 +118,6 @@ namespace DataAccess.Repository
                 found.Description = game.Description;
                 found.Genres = game.Genres;
                 found.Price = game.Price;
-                found.ImageUrl = game.ImageUrl;
                 found.Genres = game.Genres;
                 await _appDbContext.SaveChangesAsync();
             }
@@ -145,21 +150,31 @@ namespace DataAccess.Repository
             return new List<Game>();
         }
 
-        public async Task<List<Game>> Filter(int genre)
+
+        public async Task<List<Game>> Filter(int[] genres)
         {
-            var found = await _appDbContext.Genres.FirstOrDefaultAsync(g => g.Id == genre);
-            if (found != null)
+            if (genres != null && genres.Any())
             {
-                var result = await _appDbContext.Games.
-                    Where(g => g.Genres.Any(g => g.Equals(found) || g.ParentGenre.Equals(found)))
-                    .Include(g => g.Genres)
-                    .Include(g => g.Comments)
-                    .AsNoTracking()
+                var foundGenres = await _appDbContext.Genres
+                    .Where(g => genres.Contains(g.Id))
                     .ToListAsync();
 
-                return result;
+                if (foundGenres.Any())
+                {
+                    var result = await _appDbContext.Games
+                        .Where(g => g.Genres.Any(gameGenre =>
+                            foundGenres.Any(foundGenre => gameGenre.Equals(foundGenre) || gameGenre.ParentGenre.Equals(foundGenre))))
+                        .Include(g => g.Genres)
+                        .Include(g => g.Comments)
+                        .AsNoTracking()
+                        .ToListAsync();
+
+                    return result;
+                }
             }
+
             return new List<Game>();
         }
+
     }
 }

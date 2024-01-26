@@ -46,9 +46,9 @@ namespace DataAccess.Repository
 
             var games = await _appDbContext.Games.ToListAsync();
 
-            double totalPrice = gameInfo.Where(info => games.Any(game => game.Name.Equals(info.Name))).Sum(info => info.Amount * games.First(game => game.Name.Equals(info.Name)).Price);
+            double totalPrice = gameInfo.Where(info => games.Any(game => game.Id.Equals(info.GameId))).Sum(info => info.Amount * games.First(game => game.Id.Equals(info.GameId)).Price);
 
-            order.GameInfos = gameInfo.Where(info => games.Any(game => game.Name.Equals(info.Name))).ToList();
+            order.GameInfos = gameInfo.Where(info => games.Any(game => game.Id.Equals(info.GameId))).ToList();
 
 
             order.TotalPrice = totalPrice;
@@ -70,9 +70,9 @@ namespace DataAccess.Repository
 
                 var gameInfo = order.GameInfos.ToList();
 
-                gameInfo = gameInfo.Where(info => games.Any(g => g.Name.Equals(info.Name))).ToList();
+                gameInfo = gameInfo.Where(info => games.Any(g => g.Id.Equals(info.GameId))).ToList();
 
-                double totalPrice = gameInfo.Join(games, info => info.Name, game => game.Name, (info, game) => info.Amount * game.Price).Sum();
+                double totalPrice = gameInfo.Join(games, info => info.GameId, game => game.Id, (info, game) => info.Amount * game.Price).Sum();
 
                 found.TotalPrice = totalPrice;
                 found.FirstName = order.FirstName;

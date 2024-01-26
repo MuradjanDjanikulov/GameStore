@@ -3,6 +3,7 @@ using API.Models;
 using DataAccess.Entity;
 using DataAccess.Repository;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -16,6 +17,8 @@ namespace Api.Controllers
 {
     [Route("api/auth")]
     [ApiController]
+    [EnableCors("CorsPolicy")]
+
     public class AuthController : ControllerBase
     {
         private readonly Microsoft.AspNetCore.Identity.UserManager<AppUser> _userManager;
@@ -46,13 +49,13 @@ namespace Api.Controllers
             var foundUser = await _userManager.FindByNameAsync(registerModel.Username);
             if (foundUser != null)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel("Error", "User already exists!"));
+                return BadRequest(new ResponseModel("Error", "Username already exists."));
             }
             var foundUserByEmail = await _userManager.FindByEmailAsync(registerModel.Email);
 
             if (foundUserByEmail != null)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel("Error", "Email already exists!"));
+                return BadRequest(new ResponseModel("Error", "Email already exists."));
             }
 
             var user = new AppUser
@@ -74,13 +77,13 @@ namespace Api.Controllers
                     errorMessages.Add(error.Description);
                 }
 
-                return StatusCode(StatusCodes.Status500InternalServerError, errorMessages);
+                return BadRequest(errorMessages);
 
             }
 
             await _userManager.AddToRoleAsync(user, UserRoles.User);
 
-            return Ok(new ResponseModel("Success", "User created successfully"));
+            return Ok(new ResponseModel("Success", "User created successfully."));
         }
 
         [Route("update-password")]
@@ -114,36 +117,36 @@ namespace Api.Controllers
 
 
 
-        [Route("up-permission/{username}")]
+        [Route("up-permission/{id}")]
         [HttpPut]
         [Authorize(Policy = "RequireManager")]
-        public async Task<IActionResult> UpPermission([FromRoute] String username)
+        public async Task<IActionResult> UpPermission([FromRoute] String id)
         {
-            var foundUser = await _userManager.FindByNameAsync(username);
+            var foundUser = await _userManager.FindByIdAsync(id);
             if (foundUser == null)
             {
-                return NotFound(new ResponseModel("Error", $"User '{username}' not found"));
+                return NotFound(new ResponseModel("Error", $"User not found"));
             }
 
             await _userManager.AddToRoleAsync(foundUser, UserRoles.Manager);
 
-            return Ok(new ResponseModel("Success", $"Role '{UserRoles.Manager}' added to user '{username}'"));
+            return Ok(new ResponseModel("Success", $"Role '{UserRoles.Manager}' added to user"));
         }
 
-        [Route("down-permission/{username}")]
+        [Route("down-permission/{id}")]
         [HttpPut]
         [Authorize(Policy = "RequireAdmin")]
-        public async Task<IActionResult> DownPermission([FromRoute] String username)
+        public async Task<IActionResult> DownPermission([FromRoute] String id)
         {
-            var foundUser = await _userManager.FindByNameAsync(username);
+            var foundUser = await _userManager.FindByIdAsync(id);
             if (foundUser == null)
             {
-                return NotFound(new ResponseModel("Error", $"User '{username}' not found"));
+                return NotFound(new ResponseModel("Error", $"User not found"));
             }
 
             await _userManager.RemoveFromRoleAsync(foundUser, UserRoles.Manager);
 
-            return Ok(new ResponseModel("Success", $"Role '{UserRoles.Manager}' is removed from user '{username}'"));
+            return Ok(new ResponseModel("Success", $"Role '{UserRoles.Manager}' is removed from user"));
         }
 
 
@@ -232,7 +235,7 @@ namespace Api.Controllers
                 issuer: _configuration["JWT:ValidIssuer"],
                 audience: _configuration["JWT:ValidAudience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(60),
+                expires: DateTime.UtcNow.AddMinutes(120),
                 signingCredentials: signingCredentials);
 
             var jwtToken = new JwtSecurityTokenHandler().WriteToken(token);
@@ -293,13 +296,14 @@ namespace Api.Controllers
 
             var foundUser = await _userManager.FindByNameAsync(HttpContext.User.Identity.Name);
 
-            string imageDir = Directory.GetCurrentDirectory();
+            // string imageDir = Directory.GetCurrentDirectory();
+            string imageDir = "C:\\MyDisk\\Web development\\NET Questions\\Online\\module_4\\react-test\\public\\images";
 
-            string uniqueFileName = $"{foundUser.Id}.jpeg";
+            string uniqueFileName = $"{foundUser.UserName}.jpeg";
 
-            string filePath = Path.Combine(imageDir, "Images", uniqueFileName);
+            //string filePath = Path.Combine(imageDir, "Images", uniqueFileName);
+            string filePath = Path.Combine(imageDir, uniqueFileName);
 
-            Console.WriteLine(filePath);
 
             if (System.IO.File.Exists(filePath))
             {
@@ -311,7 +315,8 @@ namespace Api.Controllers
                 await ImageFile.CopyToAsync(stream);
             }
 
-            foundUser.ImageUrl = filePath;
+            //foundUser.ImageUrl = filePath;
+            foundUser.ImageUrl = uniqueFileName;
             await _userManager.UpdateAsync(foundUser);
 
             return Ok(new ResponseModel("Success", "Image set successfully"));
@@ -347,7 +352,11 @@ namespace Api.Controllers
             var userDbList = new List<UserModel>();
             foreach (var user in userList)
             {
-                var userDb = new UserModel { FirstName = user.FirstName, LastName = user.LastName, UserName = user.UserName, Email = user.Email, ImageUrl = user.ImageUrl };
+                var userDb = new UserModel { Id = user.Id, FirstName = user.FirstName, LastName = user.LastName, UserName = user.UserName, Email = user.Email, ImageUrl = user.ImageUrl };
+
+                var userRoles = await _userManager.GetRolesAsync(user);
+
+                userDb.Roles = userRoles.ToList();
 
                 userDbList.Add(userDb);
             }
